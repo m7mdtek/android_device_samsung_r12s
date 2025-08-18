@@ -1,0 +1,82 @@
+# =========================
+# Init script for s5e9945 device
+# =========================
+
+# -------------------------
+# Early init stage
+# -------------------------
+on init
+    # Disable hung task watchdog (handled by userspace watchdogd)
+    write /proc/sys/kernel/hung_task_timeout_secs 0
+
+    # EFS setup
+    rm /efs
+    mkdir /efs
+    mkdir /sec_efs
+
+    # Cut charging battery path
+    write /sys/class/power_supply/battery/siop_level 0
+
+# -------------------------
+# Late-init stage
+# -------------------------
+on late-init
+    setprop sys.usb.controller ${sys.usb.controller}
+    setprop ro.debuggable 1
+    setprop service.adb.root 1
+    setprop sys.usb.configfs 1
+    setprop sys.usb.config adb
+
+# -------------------------
+# File system setup
+# -------------------------
+on fs
+    wait /dev/block/platform/${ro.boot.boot_devices}
+    symlink /dev/block/platform/${ro.boot.boot_devices} /dev/block/bootdevice
+    symlink /dev/block/platform/${ro.boot.boot_devices}/by-name /dev/block/by-name
+    symlink /dev/block/platform/${ro.boot.boot_devices}/by-name/param /dev/block/param
+    chown root system /dev/block/param
+    chmod 0666 /dev/block/param
+    export ANDROID_ROOT /system_root
+
+# -------------------------
+# Boot stage
+# -------------------------
+on boot
+    # Start services
+    start selinux_setenforce
+    start health-hal-2-1
+
+    # Set AVB properties
+    setprop ro.boot.vbmeta.avb_version 1.0
+    setprop ro.boot.avb_version 1.2
+
+# =========================
+# Services
+# =========================
+
+# -------------------------
+# SELinux Permissive
+# -------------------------
+service selinux_setenforce /system/bin/setenforce 0
+    class core
+    oneshot
+    seclabel u:r:init:s0
+
+# -------------------------
+# Watchdog daemon
+# -------------------------
+service watchdogd /system/bin/watchdogd
+    class core
+    user root
+    group root
+    critical
+    seclabel u:r:watchdogd:s0
+
+# start watchdogd after boot
+on boot
+    start watchdogd
+
+# Restart watchdogd if crash
+on watchdogd-exit
+    restart watchdogd

@@ -1,0 +1,16 @@
+<manifest version="1.0" type="device">
+    <!-- AIDL Health v2 -->
+    <hal format="aidl">
+        <name>android.hardware.health</name>
+        <version>2</version>
+        <fqname>IHealth/default</fqname>
+    </hal>
+
+    <!-- Samsung Vendor Health (HIDL) -->
+    <hal format="hidl">
+        <name>vendor.samsung.hardware.health</name>
+        <transport>hwbinder</transport>
+        <fqname>@1.0::ISehHealth/default</fqname>
+    </hal>
+</manifest>
+
